@@ -1,0 +1,94 @@
+#define LORAMAC_JOIN_BY_REQUEST		1	//used with LORAMACJoin
+#define LORAMAC_JOIN_BY_PERSONALIZATION		0	//used with LORAMACJoin
+
+DIM rc
+DIM data$
+DIM ncurrentsize, nmaxsize
+DIM joined
+
+function HandlerLoramacJoining() as Integer
+	print "\nJoining"
+endfunc 1
+
+function HandlerLoramacJoined() as Integer
+	//JoinAccept has been received. Free to Transmit. 
+	print "\nJoined"
+endfunc 1
+
+function HandlerLoramacRxTimeout() as Integer
+	//A JoinAccept has not been received after a number of attempts
+	print "\nRx Timeout"
+endfunc 1
+
+function HandlerLoramacTxTimeout() as Integer
+	//Something went wrong - resend JoinRequest or data packet
+	print "\nTx Timeout"
+endfunc 1
+
+function HandlerLoramacRxError() as Integer
+	//Something went wrong, resend the JoinRequest
+	print "\nRx Error"
+endfunc 1
+
+function HandlerLoramacTxComplete() as Integer
+	//TxComplete has been received
+	print "\nTx Complete"
+endfunc 1
+
+function HandlerLoramacRxComplete() as Integer
+	//RxComplete has been received
+	print "\nRx Complete"
+endfunc 1
+
+function HandlerNextTx() as Integer
+	print "\nNext Tx"
+	
+	if joined == 1 then
+		print "\n---------------------------------------------------\n"
+		rc = LORAMACQueryTxPossible(strlen(data$), ncurrentsize, nmaxsize)
+		if rc == 0 then
+			print "\nCurrent "; ncurrentsize
+			print "\nMax "; nmaxsize
+		else 
+			print "\ncurrent ";ncurrentsize
+		endif
+		rc = LORAMACTxData(2,data$,1)
+		if rc != 0 then 
+			print "\nData Payload too large"
+		endif
+	else
+		rc = LORAMACJoin(LORAMAC_JOIN_BY_REQUEST)
+	endif
+endfunc 1
+
+function HandlerSequenceComplete(flag, netxtime) as Integer
+	print "\nSequence Complete"
+	print "\nNext time", netxtime
+endfunc 1
+
+function HandlerLoramacRxData() as Integer
+	dim rxdata$
+	dim nRSSI,nPort,nSNR,nFramePending,nPacketType
+	
+	rc = LORAMACRxData(rxdata$,nRSSI,nPort,nSNR,nFramePending,nPacketType)
+	print "\nStatus ";nPort;"\nRSSI ";nRSSI;"  SNR";nSNR;"\n"
+	print "\nData "; rxdata$
+endfunc 1
+
+onevent EVLORAMACJOINING CALL HandlerLoramacJoining
+onevent EVLORAMACJOINED CALL HandlerLoramacJoined
+onevent EVLORAMACRXTIMEOUT CALL HandlerLoramacRxTimeout
+onevent EVLORAMACTXTIMEOUT CALL HandlerLoramacTxTimeout
+onevent EVLORAMACRXERROR CALL HandlerLoramacRxError
+onevent EVLORAMACTXCOMPLETE CALL HandlerLoramacTxComplete
+onevent EVLORAMACRXCOMPLETE CALL HandlerLoramacRxComplete
+onevent EVLORAMACRXDATA CALL HandlerLoramacRxData
+onevent EVLORAMACNEXTTX CALL HandlerNextTx
+onevent EVLORAMACSEQUENCECOMPLETE CALL HandlerSequenceComplete
+
+data$ = "Hello"
+joined = 0
+
+rc = LORAMACJoin(LORAMAC_JOIN_BY_REQUEST)
+
+waitevent
