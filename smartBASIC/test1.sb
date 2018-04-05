@@ -1,0 +1,5 @@
+DIM i as integer
+
+for i=1 to 10
+	print "\nHello World\n"
+next

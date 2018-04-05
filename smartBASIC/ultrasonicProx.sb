@@ -1,0 +1,157 @@
+
+//******************************************************************
+//MarAlert(c) 2018
+//
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++
+//+++++ When UwTerminal downloads the app it will store it as a filename 
+//+++++ which consists of all characters up to the first .
+//+++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+//
+// Ultrasonic Prox.sb
+// Tests the functionality of the AJ-SR04M ultrasonic sensor 
+// DVK-RM191-SM-02
+//
+// 3/30/2018 - Initial Version
+// 
+
+
+//******************************************************************
+//Definitions
+//******************************************************************
+
+
+
+
+//******************************************************************
+//Library Imports
+//******************************************************************
+//#include "$.lib.ble.sb"
+
+
+
+
+//******************************************************************
+//Global Variable Declarations
+//******************************************************************
+
+dim rc 					//declare rc as integer
+dim TX_EMIT
+dim startTick
+dim rxTick
+dim rxPin
+rxPin = 29			//declare RX as SIO_29
+dim txPin
+txPin = 30			//declare TX as SIO_30
+dim LED5
+LED5 = 6			//declare LED5 as SIO_6
+dim BTN2
+BTN2 = 5			//declare Button 2 as SIO_5
+
+
+//******************************************************************
+//Function and Subroutine Definitions
+//******************************************************************
+
+
+
+
+//==================================================================
+//proxNear() senses if an object is within 1m (0.006s 2-way time)
+//==================================================================
+//function proxNear()		
+	
+//endfunc 1
+
+//==================================================================
+// proxFar() sense if the object is farther than 1m 
+//==================================================================
+//function proxFar()
+	
+//endfunc 1
+
+//==================================================================
+//TxDetect() sense if the tx gpio did go high
+//==================================================================
+function TxDetect()
+	print "2: TX Pulse Successful\n"
+endfunc 1
+
+//==================================================================
+// RxDetect() sense if the Rx gpio did go high
+//==================================================================
+function RxDetect()
+	print "RX Pulse Detected"
+endfunc 1
+
+//==================================================================
+// proxPulse() Triggers a 1ms pulse ()
+//==================================================================
+function proxPulse()
+	dim j as integer
+	startTick = GetTickCount()	//timer (in ms)
+	TX_EMIT = 0
+	WHILE TX_EMIT < 99		//guessing that while cycle is 10us
+		gpiowrite(txPin,1)	//TX digital out HIGH
+		TX_EMIT = TX_EMIT + 1
+	ENDWHILE
+	gpiowrite(txPin,0)		//TX digital out LOW
+	j = getTickSince(startTick)
+	print j;" millisecond pulse\n"
+endfunc 1
+//==================================================================
+// proxTimer() times RX 
+//==================================================================
+function proxTimer()
+	dim cm
+	print "3: Pulse Recieved\n"
+	rxTick = getTickSince(startTick)
+	cm = rxTick*1000/58
+	print rxTick;"\n"
+	print "Distance to Target (cm): ";cm;"\n"
+endfunc 1
+
+//==================================================================
+
+//******************************************************************
+//Handler Definitions
+//******************************************************************
+
+
+
+//******************************************************************
+//main() Equivalent
+//******************************************************************
+
+//start timer and send pulse (SIO_21)
+
+
+
+rc = gpiosetfunc(rxPin,1,3)	//set RX pin as digital in with strong pull down
+rc = gpiosetfunc(txPin,2,0)
+//rc = gpiosetfunc(17,1,2)	//sets sio17 (Button 1) as a digital in with a weak pull up resistor
+
+rc = gpiosetfunc(LED5,2,0) 	//sets sio6 (LED5) as a digital out
+//rc = gpiosetfunc(19,2,0) 	//sets sio19 (LED1) as a digital out
+
+rc = gpiobindevent(0,rxPin,1) 	//binds a gpio transition high to an event. sio21 (RX)
+rc = gpiobindevent(1,BTN2,0) 	//binds a gpio transition high to an event. SIO_5 (BTN2)
+rc = gpiobindevent(2,txPin,1)	
+//rc = gpiobindevent(2,17,0) //binds a gpio transition high to an event. sio17 (button 1)
+//rc = gpiobindevent(3,17,1) //binds a gpio transition low to an event. sio17 (button 1)
+print "1: Transmitter will pulse every second to range the targets.\n"
+
+ONEVENT EVTMR0 CALL proxPulse
+print "after proxPulse"
+
+
+onevent evgpiochan0 call proxTimer
+//onevent evgpiochan0 call RxDetect
+//onevent evgpiochan1 call TxDetect
+//onevent evgpiochan1 ENDWHILE 		//syntax(?)
+TimerStart(0,1000,1)				//Timer 0 is a 1000ms recurring timer
+waitevent
+
+print "5: Button 2 pressed - program ended.\n"
