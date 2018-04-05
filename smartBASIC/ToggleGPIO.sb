@@ -1,0 +1,21 @@
+//Simple Toggle GPIO demo for the RM1xx
+ 
+print "\nStart Demo\n"
+dim i
+dim pin_state
+pin_state = gpiosetfunc(0,2,0) //Init pin0/D13 Low
+while(1) //Loop forever
+    WHILE i<400 //Delay
+    i = i+1
+    ENDWHILE
+     
+    gpiowrite(0,1) //Write GPIO High
+    i = 0
+    WHILE i<400 //Delay
+    i = i+1
+    ENDWHILE
+     
+    gpiowrite(0,0) //Write GPIO LOW
+    i = 0
+     
+ENDWHILE
